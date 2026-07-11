@@ -9,10 +9,16 @@ router.post("/", auth, async (req, res) => {
     const User = require("../models/User");
     const user = await User.findById(req.user.id);
     
-    let finalTotal = req.body.total;
+    // Calculate total from items on backend to prevent tampering and double-discounting
+    const calculatedTotal = req.body.items.reduce((sum, item) => {
+      const qty = item.quantity || item.qty || 1;
+      return sum + (item.price * qty);
+    }, 0);
+
+    let finalTotal = calculatedTotal;
     if (user && !user.hasUsedFirstDiscount) {
       // Backend confirmation of 50% discount
-      finalTotal = finalTotal * 0.5;
+      finalTotal = calculatedTotal * 0.5;
       user.hasUsedFirstDiscount = true;
       await user.save();
     }
